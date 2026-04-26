@@ -28,7 +28,7 @@ docker compose down
 
 ### アクセス
 
-ブラウザで **http://localhost** を開く
+ブラウザで **http://localhost:8080** を開く
 
 > 論文データ（PDF・DB）は `data/` フォルダに保存されます。`docker compose down` しても消えません。
 

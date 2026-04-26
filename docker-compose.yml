@@ -9,13 +9,13 @@ services:
     environment:
       - DATABASE_URL=sqlite:////app/data/paper_manager.db
       - UPLOAD_DIR=/app/uploads
-      - CORS_ORIGINS=http://localhost
+      - CORS_ORIGINS=http://localhost:8080
     restart: unless-stopped
 
   frontend:
     build: ./frontend
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - backend
     restart: unless-stopped
