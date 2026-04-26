@@ -12,7 +12,7 @@ import schemas
 
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 
 
 def _build_node(p: models.Paper) -> schemas.GraphNode:

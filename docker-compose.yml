@@ -1,0 +1,21 @@
+name: paper-manager
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./data/db:/app/data
+      - ./data/uploads:/app/uploads
+    environment:
+      - DATABASE_URL=sqlite:////app/data/paper_manager.db
+      - UPLOAD_DIR=/app/uploads
+      - CORS_ORIGINS=http://localhost
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

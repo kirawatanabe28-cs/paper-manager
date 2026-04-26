@@ -4,20 +4,46 @@
 
 ---
 
-## 起動手順
+## 起動方法 A：Docker（推奨）
 
-### 前提
-- `uv` がインストール済み（確認済み）
-- `Node.js` がインストール済み（確認済み）
+**必要なもの：Docker のみ**（Docker Desktop または Docker CLI + WSL2）
+
+### 初回
+
+```bash
+docker compose up --build
+```
+
+### 2回目以降
+
+```bash
+docker compose up
+```
+
+### 停止
+
+```bash
+docker compose down
+```
+
+### アクセス
+
+ブラウザで **http://localhost** を開く
+
+> 論文データ（PDF・DB）は `data/` フォルダに保存されます。`docker compose down` しても消えません。
 
 ---
 
-### バックエンド（初回のみ）
+## 起動方法 B：ローカル開発（uv + Node.js）
 
-PowerShell または コマンドプロンプトを開いて実行：
+### 前提
+- `uv` がインストール済み
+- `Node.js` がインストール済み
+
+### バックエンド（初回のみ：仮想環境セットアップ）
 
 ```powershell
-cd "c:\大学院研究\論文管理アプリ\backend"
+cd backend
 uv venv --python 3.12
 uv pip install -r requirements.txt
 ```
@@ -25,28 +51,27 @@ uv pip install -r requirements.txt
 ### バックエンド（毎回の起動）
 
 ```powershell
-cd "c:\大学院研究\論文管理アプリ\backend"
+cd backend
 .venv\Scripts\uvicorn.exe main:app --reload
 ```
 
-`INFO: Application startup complete.` と表示されれば成功。
-
----
-
-### フロントエンド（別のターミナルで実行）
+### フロントエンド（別ターミナルで）
 
 ```powershell
-cd "c:\大学院研究\論文管理アプリ\frontend"
+cd frontend
 npm run dev
 ```
 
-`Local: http://localhost:5173/` と表示されれば成功。
+ブラウザで **http://localhost:5173** を開く
 
 ---
 
-### アクセス
+## 機能
 
-ブラウザで **http://localhost:5173** を開く
-
-> バックエンドとフロントエンドは **両方同時に起動** している必要があります。
-> 停止するときは各ターミナルで `Ctrl + C`
+- プロジェクト作成・削除
+- 論文のPDFアップロード（タイトル・発表年・説明のメタデータ付き）
+- 引用関係の設定（年フィルタ付き、インライン新規アップロード対応）
+- 論文の編集（タイトル・年・説明・引用関係）
+- 有向グラフで引用関係を可視化（dagre 自動レイアウト）
+- 特定の論文を選択するとサブグラフを表示
+- グラフノードにカーソルを合わせると説明文を表示
