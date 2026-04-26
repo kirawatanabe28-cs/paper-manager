@@ -90,6 +90,7 @@ export default function PaperEditModal({ projectId, paper, onClose, onUpdated }:
         file: newCiting.file,
         citingPaperIds: [],
         citedByPaperIds: [],
+        urls: [],
       });
       setSelectedCiting(prev => new Set([...prev, uploaded.id]));
       setCitingList(prev => [uploaded, ...prev]);
@@ -115,6 +116,7 @@ export default function PaperEditModal({ projectId, paper, onClose, onUpdated }:
         file: newCitedBy.file,
         citingPaperIds: [],
         citedByPaperIds: [],
+        urls: [],
       });
       setSelectedCitedBy(prev => new Set([...prev, uploaded.id]));
       setCitedByList(prev => [uploaded, ...prev]);
