@@ -5,10 +5,10 @@ const api = axios.create({ baseURL: '/api' });
 
 // ---- Projects ----
 export const getProjects = () =>
-  api.get<Project[]>('/projects').then(r => r.data);
+  api.get<Project[]>('/projects/').then(r => r.data);
 
 export const createProject = (name: string, description: string) =>
-  api.post<Project>('/projects', { name, description }).then(r => r.data);
+  api.post<Project>('/projects/', { name, description }).then(r => r.data);
 
 export const getProject = (projectId: number) =>
   api.get<Project>(`/projects/${projectId}`).then(r => r.data);
