@@ -13,6 +13,7 @@ export interface Paper {
   year: number;
   filename: string;
   filepath: string;
+  description: string;
   created_at: string;
 }
 
@@ -25,6 +26,7 @@ export interface GraphNodeData {
   label: string;
   year: number;
   paperId: number;
+  description: string;
 }
 
 export interface GraphNode {

@@ -25,14 +25,23 @@ class PaperResponse(BaseModel):
     year: int
     filename: str
     filepath: str
+    description: str = ""
     created_at: datetime.datetime
 
     model_config = {"from_attributes": True}
 
 
 class PaperDetail(PaperResponse):
-    citing: List["PaperResponse"] = []   # この論文が引用している論文
-    cited_by: List["PaperResponse"] = [] # この論文を引用している論文
+    citing: List["PaperResponse"] = []
+    cited_by: List["PaperResponse"] = []
+
+
+class PaperUpdate(BaseModel):
+    title: str
+    year: int
+    description: str = ""
+    citing_paper_ids: List[int] = []
+    cited_by_paper_ids: List[int] = []
 
 
 class GraphNode(BaseModel):

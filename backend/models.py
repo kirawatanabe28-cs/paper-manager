@@ -24,6 +24,7 @@ class Paper(Base):
     year = Column(Integer, nullable=False)
     filename = Column(String, nullable=False)
     filepath = Column(String, nullable=False)
+    description = Column(String, default="")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     project = relationship("Project", back_populates="papers")

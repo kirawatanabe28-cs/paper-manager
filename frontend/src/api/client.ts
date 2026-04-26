@@ -40,6 +40,7 @@ export const uploadPaper = (
   data: {
     title: string;
     year: number;
+    description: string;
     file: File;
     citingPaperIds: number[];
     citedByPaperIds: number[];
@@ -48,11 +49,31 @@ export const uploadPaper = (
   const form = new FormData();
   form.append('title', data.title);
   form.append('year', String(data.year));
+  form.append('description', data.description);
   form.append('file', data.file);
   form.append('citing_paper_ids', JSON.stringify(data.citingPaperIds));
   form.append('cited_by_paper_ids', JSON.stringify(data.citedByPaperIds));
   return api.post<Paper>(`/projects/${projectId}/papers`, form).then(r => r.data);
 };
+
+export const updatePaper = (
+  projectId: number,
+  paperId: number,
+  data: {
+    title: string;
+    year: number;
+    description: string;
+    citingPaperIds: number[];
+    citedByPaperIds: number[];
+  },
+) =>
+  api.put<Paper>(`/projects/${projectId}/papers/${paperId}`, {
+    title: data.title,
+    year: data.year,
+    description: data.description,
+    citing_paper_ids: data.citingPaperIds,
+    cited_by_paper_ids: data.citedByPaperIds,
+  }).then(r => r.data);
 
 export const deletePaper = (projectId: number, paperId: number) =>
   api.delete(`/projects/${projectId}/papers/${paperId}`);

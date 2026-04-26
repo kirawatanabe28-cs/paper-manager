@@ -4,6 +4,7 @@ import { getProject, getPapers, getPaper, deletePaper } from '../api/client';
 import type { Project, Paper, PaperDetail } from '../types';
 import GraphView from '../components/GraphView';
 import PaperUploadModal from '../components/PaperUploadModal';
+import PaperEditModal from '../components/PaperEditModal';
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -15,6 +16,7 @@ export default function ProjectDetailPage() {
   const [selectedPaper, setSelectedPaper] = useState<PaperDetail | null>(null);
   const [selectedPaperId, setSelectedPaperId] = useState<number | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [editingPaper, setEditingPaper] = useState<PaperDetail | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const loadData = useCallback(async () => {
@@ -40,6 +42,12 @@ export default function ProjectDetailPage() {
     handleSelectPaper(paperId);
   };
 
+  const handleEdit = async (e: React.MouseEvent, paperId: number) => {
+    e.stopPropagation();
+    const detail = await getPaper(pid, paperId);
+    setEditingPaper(detail);
+  };
+
   const handleDelete = async (e: React.MouseEvent, paperId: number) => {
     e.stopPropagation();
     if (!confirm('この論文を削除しますか？')) return;
@@ -55,6 +63,16 @@ export default function ProjectDetailPage() {
   const handleUploaded = () => {
     loadData();
     setRefreshTrigger(t => t + 1);
+  };
+
+  const handleUpdated = async () => {
+    loadData();
+    setRefreshTrigger(t => t + 1);
+    // 選択中の論文情報を再取得して反映
+    if (selectedPaperId) {
+      const detail = await getPaper(pid, selectedPaperId);
+      setSelectedPaper(detail);
+    }
   };
 
   if (!project) return <div className="flex items-center justify-center h-screen text-gray-400">読み込み中...</div>;
@@ -96,9 +114,7 @@ export default function ProjectDetailPage() {
 
           <div className="overflow-y-auto flex-1">
             {papers.length === 0 ? (
-              <div className="p-6 text-center text-gray-400 text-sm">
-                論文がまだありません
-              </div>
+              <div className="p-6 text-center text-gray-400 text-sm">論文がまだありません</div>
             ) : (
               <ul className="divide-y divide-gray-100">
                 {papers.map(p => (
@@ -112,12 +128,22 @@ export default function ProjectDetailPage() {
                         <p className="text-sm font-medium text-gray-800 leading-tight line-clamp-2">{p.title}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{p.year}年</p>
                       </div>
-                      <button
-                        onClick={e => handleDelete(e, p.id)}
-                        className="text-gray-300 hover:text-red-500 shrink-0 text-xs mt-0.5"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <button
+                          onClick={e => handleEdit(e, p.id)}
+                          className="text-gray-400 hover:text-blue-500 text-xs px-1.5 py-0.5 rounded hover:bg-blue-50"
+                          title="編集"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={e => handleDelete(e, p.id)}
+                          className="text-gray-300 hover:text-red-500 text-xs px-1 py-0.5 rounded hover:bg-red-50"
+                          title="削除"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -125,35 +151,44 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          {/* 選択中の論文の引用情報 */}
+          {/* 選択中の論文の詳細 */}
           {selectedPaper && (
-            <div className="border-t border-gray-200 p-4 bg-gray-50 overflow-y-auto" style={{ maxHeight: '40%' }}>
-              <p className="text-xs font-semibold text-gray-600 mb-2">引用情報</p>
+            <div className="border-t border-gray-200 p-4 bg-gray-50 overflow-y-auto" style={{ maxHeight: '45%' }}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-gray-600">論文詳細</p>
+                <button
+                  onClick={e => handleEdit(e, selectedPaper.id)}
+                  className="text-xs text-blue-500 hover:underline"
+                >
+                  編集
+                </button>
+              </div>
+
+              {selectedPaper.description && (
+                <p className="text-xs text-gray-600 mb-3 leading-relaxed bg-white border border-gray-200 rounded p-2">
+                  {selectedPaper.description}
+                </p>
+              )}
+
               <div className="mb-3">
-                <p className="text-xs font-medium text-gray-500 mb-1">この論文が引用している論文（{selectedPaper.citing.length}件）</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">引用している論文（{selectedPaper.citing.length}件）</p>
                 {selectedPaper.citing.length === 0
                   ? <p className="text-xs text-gray-400">なし</p>
                   : selectedPaper.citing.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleSelectPaper(c.id)}
-                      className="block text-left w-full text-xs text-blue-600 hover:underline leading-tight mb-1"
-                    >
+                    <button key={c.id} onClick={() => handleSelectPaper(c.id)}
+                      className="block text-left w-full text-xs text-blue-600 hover:underline leading-tight mb-1">
                       {c.title}（{c.year}年）
                     </button>
                   ))
                 }
               </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">この論文を引用している論文（{selectedPaper.cited_by.length}件）</p>
+              <div className="mb-3">
+                <p className="text-xs font-medium text-gray-500 mb-1">引用されている論文（{selectedPaper.cited_by.length}件）</p>
                 {selectedPaper.cited_by.length === 0
                   ? <p className="text-xs text-gray-400">なし</p>
                   : selectedPaper.cited_by.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleSelectPaper(c.id)}
-                      className="block text-left w-full text-xs text-blue-600 hover:underline leading-tight mb-1"
-                    >
+                    <button key={c.id} onClick={() => handleSelectPaper(c.id)}
+                      className="block text-left w-full text-xs text-blue-600 hover:underline leading-tight mb-1">
                       {c.title}（{c.year}年）
                     </button>
                   ))
@@ -163,7 +198,7 @@ export default function ProjectDetailPage() {
                 href={`/uploads/${pid}/${selectedPaper.filename}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 block text-center text-xs bg-blue-600 text-white rounded px-2 py-1.5 hover:bg-blue-700"
+                className="block text-center text-xs bg-blue-600 text-white rounded px-2 py-1.5 hover:bg-blue-700"
               >
                 PDFを開く
               </a>
@@ -187,6 +222,15 @@ export default function ProjectDetailPage() {
           projectId={pid}
           onClose={() => setShowUpload(false)}
           onUploaded={handleUploaded}
+        />
+      )}
+
+      {editingPaper && (
+        <PaperEditModal
+          projectId={pid}
+          paper={editingPaper}
+          onClose={() => setEditingPaper(null)}
+          onUpdated={handleUpdated}
         />
       )}
     </div>

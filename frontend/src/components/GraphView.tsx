@@ -21,15 +21,54 @@ interface PaperNodeProps {
 }
 
 function PaperNode({ data }: PaperNodeProps) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
       className={`rounded-lg border-2 px-3 py-2 shadow-sm bg-white cursor-pointer select-none
         ${data.selected ? 'border-orange-500 bg-orange-50' : 'border-blue-400 hover:border-blue-600'}`}
-      style={{ width: 200, minHeight: 56 }}
+      style={{ width: 200, minHeight: 56, position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
+
+      {/* ホバー時ツールチップ */}
+      {hovered && data.description && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '110%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            width: 260,
+            pointerEvents: 'none',
+          }}
+          className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-2xl leading-relaxed whitespace-pre-wrap"
+        >
+          <p className="font-semibold text-blue-300 mb-1">{data.label}</p>
+          <p>{data.description}</p>
+          {/* 吹き出しの三角 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: '6px solid #111827',
+            }}
+          />
+        </div>
+      )}
+
       <div className="text-xs font-semibold text-gray-800 leading-tight line-clamp-2">{data.label}</div>
       <div className="text-xs text-gray-400 mt-1">{data.year}年</div>
+
       <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8' }} />
     </div>
   );
