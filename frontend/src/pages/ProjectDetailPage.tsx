@@ -170,6 +170,27 @@ export default function ProjectDetailPage() {
                 </p>
               )}
 
+              {selectedPaper.urls && selectedPaper.urls.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1">関連URL</p>
+                  <div className="space-y-1">
+                    {selectedPaper.urls.map((u, i) => (
+                      <a
+                        key={i}
+                        href={u.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline truncate"
+                      >
+                        <span className="text-gray-400">↗</span>
+                        <span className="font-medium shrink-0">{u.label || 'URL'}</span>
+                        <span className="text-gray-400 truncate">{u.url}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mb-3">
                 <p className="text-xs font-medium text-gray-500 mb-1">引用している論文（{selectedPaper.citing.length}件）</p>
                 {selectedPaper.citing.length === 0

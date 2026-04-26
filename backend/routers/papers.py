@@ -3,7 +3,7 @@ import os
 from collections import deque
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -50,6 +50,13 @@ def _add_citations(db: Session, paper_id: int, project_id: int, year: int,
                 db.add(models.Citation(paper_id=citing_id, cited_paper_id=paper_id))
 
 
+def _replace_urls(db: Session, paper_id: int, url_items: List[schemas.UrlItem]):
+    db.query(models.PaperUrl).filter(models.PaperUrl.paper_id == paper_id).delete()
+    for item in url_items:
+        if item.url.strip():
+            db.add(models.PaperUrl(paper_id=paper_id, url=item.url.strip(), label=item.label.strip()))
+
+
 @router.get("/{project_id}/papers", response_model=List[schemas.PaperResponse])
 def get_papers(project_id: int, db: Session = Depends(get_db)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -86,7 +93,6 @@ def get_paper(project_id: int, paper_id: int, db: Session = Depends(get_db)):
 
     citing_rows = db.query(models.Citation).filter(models.Citation.paper_id == paper_id).all()
     cited_by_rows = db.query(models.Citation).filter(models.Citation.cited_paper_id == paper_id).all()
-
     citing_papers = [db.query(models.Paper).filter(models.Paper.id == c.cited_paper_id).first() for c in citing_rows]
     cited_by_papers = [db.query(models.Paper).filter(models.Paper.id == c.paper_id).first() for c in cited_by_rows]
 
@@ -101,6 +107,7 @@ def get_paper(project_id: int, paper_id: int, db: Session = Depends(get_db)):
         created_at=paper.created_at,
         citing=[p for p in citing_papers if p],
         cited_by=[p for p in cited_by_papers if p],
+        urls=[schemas.UrlItem(url=u.url, label=u.label) for u in paper.urls],
     )
 
 
@@ -113,6 +120,7 @@ async def upload_paper(
     file: UploadFile = File(...),
     citing_paper_ids: str = Form("[]"),
     cited_by_paper_ids: str = Form("[]"),
+    urls: str = Form("[]"),
     db: Session = Depends(get_db),
 ):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -153,10 +161,12 @@ async def upload_paper(
     try:
         citing_ids: List[int] = json.loads(citing_paper_ids)
         cited_by_ids: List[int] = json.loads(cited_by_paper_ids)
-    except json.JSONDecodeError:
-        citing_ids, cited_by_ids = [], []
+        url_items = [schemas.UrlItem(**u) for u in json.loads(urls)]
+    except (json.JSONDecodeError, Exception):
+        citing_ids, cited_by_ids, url_items = [], [], []
 
     _add_citations(db, db_paper.id, project_id, year, citing_ids, cited_by_ids)
+    _replace_urls(db, db_paper.id, url_items)
     db.commit()
     return db_paper
 
@@ -178,13 +188,13 @@ def update_paper(
     paper.year = data.year
     paper.description = data.description
 
-    # 既存の引用関係をすべて削除して再構築
     db.query(models.Citation).filter(
         (models.Citation.paper_id == paper_id) | (models.Citation.cited_paper_id == paper_id)
     ).delete(synchronize_session=False)
     db.flush()
 
     _add_citations(db, paper_id, project_id, data.year, data.citing_paper_ids, data.cited_by_paper_ids)
+    _replace_urls(db, paper_id, data.urls)
     db.commit()
     db.refresh(paper)
     return paper
@@ -246,7 +256,7 @@ def get_subgraph(project_id: int, paper_id: int, db: Session = Depends(get_db)):
         adj[c.cited_paper_id].add(c.paper_id)
 
     visited: set = set()
-    queue: deque = deque([paper_id])
+    queue = deque([paper_id])
     while queue:
         current = queue.popleft()
         if current in visited:

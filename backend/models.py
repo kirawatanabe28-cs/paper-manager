@@ -28,12 +28,23 @@ class Paper(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     project = relationship("Project", back_populates="papers")
+    urls = relationship("PaperUrl", back_populates="paper", cascade="all, delete-orphan")
+
+
+class PaperUrl(Base):
+    __tablename__ = "paper_urls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    url = Column(String, nullable=False)
+    label = Column(String, default="")
+
+    paper = relationship("Paper", back_populates="urls")
 
 
 class Citation(Base):
     __tablename__ = "citations"
 
     id = Column(Integer, primary_key=True, index=True)
-    # paper_id が cited_paper_id を引用している (paper_id → cited_paper_id)
     paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
     cited_paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)

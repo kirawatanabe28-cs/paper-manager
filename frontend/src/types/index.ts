@@ -6,6 +6,11 @@ export interface Project {
   paper_count: number;
 }
 
+export interface UrlItem {
+  url: string;
+  label: string;
+}
+
 export interface Paper {
   id: number;
   project_id: number;
@@ -18,8 +23,9 @@ export interface Paper {
 }
 
 export interface PaperDetail extends Paper {
-  citing: Paper[];    // この論文が引用している論文
-  cited_by: Paper[];  // この論文を引用している論文
+  citing: Paper[];
+  cited_by: Paper[];
+  urls: UrlItem[];
 }
 
 export interface GraphNodeData {

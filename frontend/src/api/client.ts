@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Project, Paper, PaperDetail, GraphData } from '../types';
+import type { Project, Paper, PaperDetail, GraphData, UrlItem } from '../types';
 
 const api = axios.create({ baseURL: '/api' });
 
@@ -44,6 +44,7 @@ export const uploadPaper = (
     file: File;
     citingPaperIds: number[];
     citedByPaperIds: number[];
+    urls: UrlItem[];
   },
 ) => {
   const form = new FormData();
@@ -53,6 +54,7 @@ export const uploadPaper = (
   form.append('file', data.file);
   form.append('citing_paper_ids', JSON.stringify(data.citingPaperIds));
   form.append('cited_by_paper_ids', JSON.stringify(data.citedByPaperIds));
+  form.append('urls', JSON.stringify(data.urls));
   return api.post<Paper>(`/projects/${projectId}/papers`, form).then(r => r.data);
 };
 
@@ -65,6 +67,7 @@ export const updatePaper = (
     description: string;
     citingPaperIds: number[];
     citedByPaperIds: number[];
+    urls: UrlItem[];
   },
 ) =>
   api.put<Paper>(`/projects/${projectId}/papers/${paperId}`, {
@@ -73,6 +76,7 @@ export const updatePaper = (
     description: data.description,
     citing_paper_ids: data.citingPaperIds,
     cited_by_paper_ids: data.citedByPaperIds,
+    urls: data.urls,
   }).then(r => r.data);
 
 export const deletePaper = (projectId: number, paperId: number) =>

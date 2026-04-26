@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getPapersForCitation, uploadPaper } from '../api/client';
-import type { Paper } from '../types';
+import type { Paper, UrlItem } from '../types';
+import UrlListEditor from './UrlListEditor';
 
 interface NewPaperForm {
   title: string;
@@ -21,6 +22,7 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
   const [title, setTitle] = useState('');
   const [year, setYear] = useState('');
   const [description, setDescription] = useState('');
+  const [urls, setUrls] = useState<UrlItem[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -146,6 +148,7 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
         file,
         citingPaperIds: Array.from(selectedCiting),
         citedByPaperIds: Array.from(selectedCitedBy),
+        urls: urls.filter(u => u.url.trim()),
       });
       onUploaded();
       onClose();
@@ -207,6 +210,7 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
                   placeholder="論文の概要や研究内容を入力（グラフ上でホバーすると表示されます）"
                 />
               </div>
+              <UrlListEditor urls={urls} onChange={setUrls} />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PDFファイル *</label>
                 <div

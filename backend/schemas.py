@@ -18,6 +18,13 @@ class ProjectResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UrlItem(BaseModel):
+    url: str
+    label: str = ""
+
+    model_config = {"from_attributes": True}
+
+
 class PaperResponse(BaseModel):
     id: int
     project_id: int
@@ -34,6 +41,7 @@ class PaperResponse(BaseModel):
 class PaperDetail(PaperResponse):
     citing: List["PaperResponse"] = []
     cited_by: List["PaperResponse"] = []
+    urls: List[UrlItem] = []
 
 
 class PaperUpdate(BaseModel):
@@ -42,6 +50,7 @@ class PaperUpdate(BaseModel):
     description: str = ""
     citing_paper_ids: List[int] = []
     cited_by_paper_ids: List[int] = []
+    urls: List[UrlItem] = []
 
 
 class GraphNode(BaseModel):

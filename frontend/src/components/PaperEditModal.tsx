@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getPapersForCitation, updatePaper, uploadPaper } from '../api/client';
-import type { Paper, PaperDetail } from '../types';
+import type { Paper, PaperDetail, UrlItem } from '../types';
+import UrlListEditor from './UrlListEditor';
 
 interface NewPaperForm {
   title: string;
@@ -22,6 +23,7 @@ export default function PaperEditModal({ projectId, paper, onClose, onUpdated }:
   const [title, setTitle] = useState(paper.title);
   const [year, setYear] = useState(String(paper.year));
   const [description, setDescription] = useState(paper.description ?? '');
+  const [urls, setUrls] = useState<UrlItem[]>(paper.urls ?? []);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -134,6 +136,7 @@ export default function PaperEditModal({ projectId, paper, onClose, onUpdated }:
         description: description.trim(),
         citingPaperIds: Array.from(selectedCiting),
         citedByPaperIds: Array.from(selectedCitedBy),
+        urls: urls.filter(u => u.url.trim()),
       });
       onUpdated();
       onClose();
@@ -191,6 +194,7 @@ export default function PaperEditModal({ projectId, paper, onClose, onUpdated }:
                   placeholder="論文の概要や研究内容を入力（グラフ上でホバーすると表示されます）"
                 />
               </div>
+              <UrlListEditor urls={urls} onChange={setUrls} />
               <div className="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500">
                 PDFファイルは変更できません。変更が必要な場合は論文を削除して再アップロードしてください。
               </div>
