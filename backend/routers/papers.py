@@ -220,6 +220,61 @@ def _auto_link_references(
 #  API エンドポイント                                                  #
 # ------------------------------------------------------------------ #
 
+@router.post("/{project_id}/analyze-citations")
+async def analyze_citations_endpoint(
+    project_id: int,
+    title: str = Form(...),
+    year: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """
+    PDF を受け取り、GROBID で参考文献を抽出して既存論文と照合する。
+    DB への保存は行わない（Step2 のプレビュー専用）。
+    """
+    content = await file.read()
+    ref_titles = await _extract_reference_titles(content, file.filename or "paper.pdf")
+
+    existing_papers = db.query(models.Paper).filter(
+        models.Paper.project_id == project_id
+    ).all()
+
+    # 順方向: 新論文が引用している既存論文（年フィルタ: 引用先 <= 新論文の年）
+    citing_ids: List[int] = []
+    matched_cited: set = set()
+    for ref_title in ref_titles:
+        best_sim, best_id = -1.0, None
+        for ep in existing_papers:
+            if ep.year <= year and ep.id not in matched_cited:
+                sim = _similarity(ref_title, ep.title)
+                if sim >= SIMILARITY_THRESHOLD and sim > best_sim:
+                    best_sim, best_id = sim, ep.id
+        if best_id is not None:
+            citing_ids.append(best_id)
+            matched_cited.add(best_id)
+
+    # 逆方向: 既存論文の保存済み参考文献に新論文タイトルが含まれるか（年フィルタ: 引用元 >= 新論文の年）
+    cited_by_ids: List[int] = []
+    reverse_candidates = [ep for ep in existing_papers if ep.year >= year]
+    if reverse_candidates:
+        ep_ids = [ep.id for ep in reverse_candidates]
+        existing_refs = db.query(models.PaperReference).filter(
+            models.PaperReference.paper_id.in_(ep_ids)
+        ).all()
+        paper_refs_map: dict = {}
+        for ref in existing_refs:
+            paper_refs_map.setdefault(ref.paper_id, []).append(ref.ref_title)
+        for ep_id, refs in paper_refs_map.items():
+            if any(_similarity(r, title) >= SIMILARITY_THRESHOLD for r in refs):
+                cited_by_ids.append(ep_id)
+
+    return {
+        "citing_ids": citing_ids,
+        "cited_by_ids": cited_by_ids,
+        "raw_refs": ref_titles,
+    }
+
+
 @router.get("/{project_id}/papers", response_model=List[schemas.PaperResponse])
 def get_papers(project_id: int, db: Session = Depends(get_db)):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -284,6 +339,7 @@ async def upload_paper(
     citing_paper_ids: str = Form("[]"),
     cited_by_paper_ids: str = Form("[]"),
     urls: str = Form("[]"),
+    raw_refs: str = Form("[]"),  # Step2で抽出済みの生参考文献タイトル
     db: Session = Depends(get_db),
 ):
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
@@ -321,25 +377,32 @@ async def upload_paper(
     db.commit()
     db.refresh(db_paper)
 
-    # 手動選択の引用関係（編集モーダルからの呼び出し用）
     try:
         citing_ids: List[int] = json.loads(citing_paper_ids)
         cited_by_ids: List[int] = json.loads(cited_by_paper_ids)
         url_items = [schemas.UrlItem(**u) for u in json.loads(urls)]
+        raw_ref_list: List[str] = json.loads(raw_refs)
     except Exception:
-        citing_ids, cited_by_ids, url_items = [], [], []
+        citing_ids, cited_by_ids, url_items, raw_ref_list = [], [], [], []
 
     _add_citations(db, db_paper.id, project_id, year, citing_ids, cited_by_ids)
     _replace_urls(db, db_paper.id, url_items)
     db.commit()
 
-    # GROBID による参考文献自動抽出・自動リンク（失敗しても論文保存は成功）
-    try:
-        ref_titles = await _extract_reference_titles(content, file.filename)
-        if ref_titles:
-            _auto_link_references(db, db_paper.id, project_id, ref_titles, db_paper.title, db_paper.year)
-    except Exception:
-        pass
+    if raw_ref_list:
+        # Step2 で分析済み → 生参照タイトルを保存するだけ（GROBID 再呼び出し不要）
+        for ref_title in raw_ref_list:
+            if ref_title.strip():
+                db.add(models.PaperReference(paper_id=db_paper.id, ref_title=ref_title))
+        db.commit()
+    else:
+        # フォールバック: Step2 をスキップした場合など、GROBID で自動リンク
+        try:
+            ref_titles = await _extract_reference_titles(content, file.filename or "paper.pdf")
+            if ref_titles:
+                _auto_link_references(db, db_paper.id, project_id, ref_titles, db_paper.title, db_paper.year)
+        except Exception:
+            pass
 
     return db_paper
 

@@ -45,6 +45,7 @@ export const uploadPaper = (
     citingPaperIds: number[];
     citedByPaperIds: number[];
     urls: UrlItem[];
+    rawRefs?: string[];
   },
 ) => {
   const form = new FormData();
@@ -55,6 +56,7 @@ export const uploadPaper = (
   form.append('citing_paper_ids', JSON.stringify(data.citingPaperIds));
   form.append('cited_by_paper_ids', JSON.stringify(data.citedByPaperIds));
   form.append('urls', JSON.stringify(data.urls));
+  form.append('raw_refs', JSON.stringify(data.rawRefs ?? []));
   return api.post<Paper>(`/projects/${projectId}/papers`, form).then(r => r.data);
 };
 
@@ -87,6 +89,21 @@ export const extractTitle = (file: File): Promise<string> => {
   const form = new FormData();
   form.append('file', file);
   return api.post<{ title: string }>('/grobid/extract-title', form).then(r => r.data.title);
+};
+
+export const analyzeCitations = (
+  projectId: number,
+  title: string,
+  year: number,
+  file: File,
+): Promise<{ citing_ids: number[]; cited_by_ids: number[]; raw_refs: string[] }> => {
+  const form = new FormData();
+  form.append('title', title);
+  form.append('year', String(year));
+  form.append('file', file);
+  return api
+    .post(`/projects/${projectId}/analyze-citations`, form)
+    .then(r => r.data);
 };
 
 // ---- Graph ----
