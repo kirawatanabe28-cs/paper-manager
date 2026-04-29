@@ -240,7 +240,7 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
   }: {
     form: NewPaperForm;
     onChange: (v: NewPaperForm) => void;
-    fileRef: React.RefObject<HTMLInputElement>;
+    fileRef: React.RefObject<HTMLInputElement | null>;
     loading: boolean;
     onSubmit: () => void;
     maxYear?: number;
