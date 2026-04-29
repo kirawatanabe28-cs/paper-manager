@@ -29,6 +29,7 @@ class Paper(Base):
 
     project = relationship("Project", back_populates="papers")
     urls = relationship("PaperUrl", back_populates="paper", cascade="all, delete-orphan")
+    references = relationship("PaperReference", back_populates="paper", cascade="all, delete-orphan")
 
 
 class PaperUrl(Base):
@@ -40,6 +41,17 @@ class PaperUrl(Base):
     label = Column(String, default="")
 
     paper = relationship("Paper", back_populates="urls")
+
+
+class PaperReference(Base):
+    """GROBIDで抽出した生の参考文献タイトルを保存するテーブル"""
+    __tablename__ = "paper_references"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paper_id = Column(Integer, ForeignKey("papers.id", ondelete="CASCADE"), nullable=False)
+    ref_title = Column(String, nullable=False)
+
+    paper = relationship("Paper", back_populates="references")
 
 
 class Citation(Base):
