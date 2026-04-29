@@ -82,6 +82,13 @@ export const updatePaper = (
 export const deletePaper = (projectId: number, paperId: number) =>
   api.delete(`/projects/${projectId}/papers/${paperId}`);
 
+// ---- GROBID ----
+export const extractTitle = (file: File): Promise<string> => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post<{ title: string }>('/grobid/extract-title', form).then(r => r.data.title);
+};
+
 // ---- Graph ----
 export const getGraph = (projectId: number) =>
   api.get<GraphData>(`/projects/${projectId}/graph`).then(r => r.data);

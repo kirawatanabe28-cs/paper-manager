@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getPapersForCitation, uploadPaper } from '../api/client';
+import { extractTitle, getPapersForCitation, uploadPaper } from '../api/client';
 import type { Paper, UrlItem } from '../types';
 import UrlListEditor from './UrlListEditor';
 
@@ -24,6 +24,8 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
   const [description, setDescription] = useState('');
   const [urls, setUrls] = useState<UrlItem[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [titleLoading, setTitleLoading] = useState(false);
+  const [titleHint, setTitleHint] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -181,39 +183,6 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">論文タイトル *</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="論文のタイトルを入力"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">発表年 *</label>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={e => setYear(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="例: 2020"
-                  min={1900}
-                  max={2100}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">論文の説明（任意）</label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="論文の概要や研究内容を入力（グラフ上でホバーすると表示されます）"
-                />
-              </div>
-              <UrlListEditor urls={urls} onChange={setUrls} />
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PDFファイル *</label>
                 <div
                   onClick={() => fileRef.current?.click()}
@@ -233,13 +202,83 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
                   type="file"
                   accept=".pdf"
                   className="hidden"
-                  onChange={e => {
+                  onChange={async e => {
                     const f = e.target.files?.[0];
-                    if (f && f.name.toLowerCase().endsWith('.pdf')) setFile(f);
-                    else if (f) alert('PDFファイルのみ選択できます');
+                    if (!f) return;
+                    if (!f.name.toLowerCase().endsWith('.pdf')) {
+                      alert('PDFファイルのみ選択できます');
+                      return;
+                    }
+                    setFile(f);
+                    setTitleLoading(true);
+                    setTitleHint('');
+                    try {
+                      const extracted = await extractTitle(f);
+                      if (extracted) {
+                        setTitle(extracted);
+                        setTitleHint('✓ タイトルを自動抽出しました（修正可能）');
+                      } else {
+                        setTitleHint('タイトルを自動抽出できませんでした。手動で入力してください。');
+                      }
+                    } catch {
+                      setTitleHint('タイトルを自動抽出できませんでした。手動で入力してください。');
+                    } finally {
+                      setTitleLoading(false);
+                    }
                   }}
                 />
               </div>
+
+              {/* タイトル */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">論文タイトル *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={titleLoading ? '' : title}
+                    onChange={e => setTitle(e.target.value)}
+                    disabled={titleLoading}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-400"
+                    placeholder={titleLoading ? 'タイトルを抽出中...' : 'タイトルを入力'}
+                  />
+                  {titleLoading && (
+                    <span className="absolute right-3 top-2 text-xs text-blue-500 animate-pulse">抽出中...</span>
+                  )}
+                </div>
+                {titleHint && (
+                  <p className={`text-xs mt-1 ${titleHint.startsWith('✓') ? 'text-green-600' : 'text-amber-600'}`}>
+                    {titleHint}
+                  </p>
+                )}
+              </div>
+
+              {/* 発表年 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">発表年 *</label>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={e => setYear(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="例: 2020"
+                  min={1900}
+                  max={2100}
+                />
+              </div>
+
+              {/* 説明 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">論文の説明（任意）</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="論文の概要や研究内容を入力（グラフ上でホバーすると表示されます）"
+                />
+              </div>
+
+              <UrlListEditor urls={urls} onChange={setUrls} />
             </div>
           )}
 

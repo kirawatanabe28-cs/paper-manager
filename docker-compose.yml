@@ -10,6 +10,7 @@ services:
       - DATABASE_URL=sqlite:////app/data/paper_manager.db
       - UPLOAD_DIR=/app/uploads
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - GROBID_URL=http://host.docker.internal:8070
     restart: unless-stopped
 
   frontend:
