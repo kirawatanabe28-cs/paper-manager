@@ -10,15 +10,29 @@ GROBID_URL = os.getenv("GROBID_URL", "http://localhost:8070")
 TEI_NS = "http://www.tei-c.org/ns/1.0"
 
 
-def _parse_title(xml_bytes: bytes) -> str:
+def _parse_header(xml_bytes: bytes) -> tuple[str, int | None]:
+    """TEI XMLからタイトルと発行年を抽出する。年が不明な場合はNoneを返す。"""
     try:
         root = ET.fromstring(xml_bytes)
         title_elem = root.find(f".//{{{TEI_NS}}}title[@type='main']")
         if title_elem is None:
             title_elem = root.find(f".//{{{TEI_NS}}}title")
-        return (title_elem.text or "").strip() if title_elem is not None else ""
+        title = (title_elem.text or "").strip() if title_elem is not None else ""
+
+        year: int | None = None
+        date_elem = root.find(f".//{{{TEI_NS}}}date[@type='published']")
+        if date_elem is None:
+            date_elem = root.find(f".//{{{TEI_NS}}}date")
+        if date_elem is not None:
+            when = date_elem.get("when", "")
+            # "2020" or "2020-01-01" などの形式に対応
+            year_str = when[:4]
+            if year_str.isdigit():
+                year = int(year_str)
+
+        return title, year
     except ET.ParseError:
-        return ""
+        return "", None
 
 
 @router.post("/extract-title")
@@ -48,8 +62,8 @@ async def extract_title(file: UploadFile = File(...)):
             detail=f"GROBIDがエラーを返しました (HTTP {response.status_code})",
         )
 
-    title = _parse_title(response.content)
+    title, year = _parse_header(response.content)
     if not title:
         raise HTTPException(status_code=422, detail="論文タイトルを抽出できませんでした")
 
-    return {"title": title}
+    return {"title": title, "year": year}

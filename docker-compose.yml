@@ -1,6 +1,17 @@
 name: paper-manager
 
 services:
+  grobid:
+    image: grobid/grobid:0.9.0-crf
+    init: true
+    ulimits:
+      core:
+        soft: 0
+        hard: 0
+    ports:
+      - "8070:8070"
+    restart: unless-stopped
+
   backend:
     build: ./backend
     volumes:
@@ -10,7 +21,9 @@ services:
       - DATABASE_URL=sqlite:////app/data/paper_manager.db
       - UPLOAD_DIR=/app/uploads
       - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-      - GROBID_URL=http://host.docker.internal:8070
+      - GROBID_URL=http://grobid:8070
+    depends_on:
+      - grobid
     restart: unless-stopped
 
   frontend:

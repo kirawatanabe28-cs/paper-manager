@@ -85,10 +85,10 @@ export const deletePaper = (projectId: number, paperId: number) =>
   api.delete(`/projects/${projectId}/papers/${paperId}`);
 
 // ---- GROBID ----
-export const extractTitle = (file: File): Promise<string> => {
+export const extractHeader = (file: File): Promise<{ title: string; year: number | null }> => {
   const form = new FormData();
   form.append('file', file);
-  return api.post<{ title: string }>('/grobid/extract-title', form).then(r => r.data.title);
+  return api.post<{ title: string; year: number | null }>('/grobid/extract-title', form).then(r => r.data);
 };
 
 export const analyzeCitations = (

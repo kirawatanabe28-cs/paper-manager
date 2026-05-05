@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { analyzeCitations, extractTitle, getPapersForCitation, uploadPaper } from '../api/client';
+import { analyzeCitations, extractHeader, getPapersForCitation, uploadPaper } from '../api/client';
 import type { Paper, UrlItem } from '../types';
 import UrlListEditor from './UrlListEditor';
 
@@ -63,10 +63,15 @@ export default function PaperUploadModal({ projectId, onClose, onUploaded }: Pro
     setTitleLoading(true);
     setTitleHint('');
     try {
-      const extracted = await extractTitle(f);
-      if (extracted) {
-        setTitle(extracted);
-        setTitleHint('✓ タイトルを自動抽出しました（修正可能）');
+      const { title: extractedTitle, year: extractedYear } = await extractHeader(f);
+      if (extractedTitle) {
+        setTitle(extractedTitle);
+        if (extractedYear) {
+          setYear(String(extractedYear));
+          setTitleHint('✓ タイトルと発表年を自動抽出しました（修正可能）');
+        } else {
+          setTitleHint('✓ タイトルを自動抽出しました（発表年は手動で入力してください）');
+        }
       } else {
         setTitleHint('タイトルを自動抽出できませんでした。手動で入力してください。');
       }

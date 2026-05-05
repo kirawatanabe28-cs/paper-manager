@@ -1,12 +1,25 @@
 # 論文管理アプリ
 
-プロジェクトごとに論文をPDFで管理し、引用関係を有向グラフで可視化するアプリです。
+プロジェクトごとに論文をPDFで管理し、引用関係を有向グラフで可視化するアプリです。  
+GROBIDによるPDFの自動解析で、タイトル抽出・引用関係の自動検出をサポートします。
 
 ---
 
-## 起動方法 A：Docker（推奨）
+## 機能
+
+- プロジェクト作成・削除
+- 論文のPDFアップロード
+- PDFアップロード時にタイトル・発行年を自動抽出
+- 参考文献リストから引用関係を自動検出
+- 引用関係の手動設定・編集
+- 有向グラフで引用関係を可視化
+---
+
+## 起動方法
 
 **必要なもの：Docker のみ**（Docker Desktop または Docker CLI + WSL2）
+
+アプリ本体（フロントエンド・バックエンド）と GROBID がまとめて起動します。
 
 ### 初回
 
@@ -32,46 +45,22 @@ docker compose down
 
 > 論文データ（PDF・DB）は `data/` フォルダに保存されます。`docker compose down` しても消えません。
 
----
-
-## 起動方法 B：ローカル開発（uv + Node.js）
-
-### 前提
-- `uv` がインストール済み
-- `Node.js` がインストール済み
-
-### バックエンド（初回のみ：仮想環境セットアップ）
-
-```powershell
-cd backend
-uv venv --python 3.12
-uv pip install -r requirements.txt
-```
-
-### バックエンド（毎回の起動）
-
-```powershell
-cd backend
-.venv\Scripts\uvicorn.exe main:app --reload
-```
-
-### フロントエンド（別ターミナルで）
-
-```powershell
-cd frontend
-npm run dev
-```
-
-ブラウザで **http://localhost:5173** を開く
+> GROBID は起動に30秒〜1分かかります。起動直後にPDFをアップロードするとタイトル抽出が失敗することがありますが、しばらく待ってから再試行してください。
 
 ---
 
-## 機能
+## 技術スタック
 
-- プロジェクト作成・削除
-- 論文のPDFアップロード（タイトル・発表年・説明のメタデータ付き）
-- 引用関係の設定（年フィルタ付き、インライン新規アップロード対応）
-- 論文の編集（タイトル・年・説明・引用関係）
-- 有向グラフで引用関係を可視化（dagre 自動レイアウト）
-- 特定の論文を選択するとサブグラフを表示
-- グラフノードにカーソルを合わせると説明文を表示
+| 層 | 技術 |
+|---|---|
+| フロントエンド | React 18 + TypeScript + Vite + Tailwind CSS v4 |
+| グラフ描画 | React Flow + dagre |
+| バックエンド | FastAPI + SQLAlchemy + SQLite |
+| PDF解析 | GROBID 0.9.0-crf |
+| インフラ | Docker / docker-compose + nginx |
+
+---
+
+## ライセンス・サードパーティ
+本アプリのライセンスは [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0) に従います。
+GROBID の使用に関するライセンス表記は [NOTICE](./NOTICE) を参照してください。
