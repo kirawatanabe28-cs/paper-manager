@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ReactFlow, {
   Background,
   Controls,
@@ -21,33 +22,41 @@ interface PaperNodeProps {
 }
 
 function PaperNode({ data }: PaperNodeProps) {
-  const [hovered, setHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    if (nodeRef.current) {
+      const rect = nodeRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+    }
+  };
 
   return (
     <div
+      ref={nodeRef}
       className={`rounded-lg border-2 px-3 py-2 shadow-sm bg-white cursor-pointer select-none
         ${data.selected ? 'border-orange-500 bg-orange-50' : 'border-blue-400 hover:border-blue-600'}`}
       style={{ width: 200, minHeight: 56, position: 'relative' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setTooltipPos(null)}
     >
       <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
 
-      {/* ホバー時ツールチップ */}
-      {hovered && data.description && (
+      {/* ホバー時ツールチップ (Portal でbody直下にレンダリングしz-index問題を回避) */}
+      {tooltipPos && data.description && createPortal(
         <div
           style={{
-            position: 'absolute',
-            bottom: '110%',
-            left: '50%',
+            position: 'fixed',
+            bottom: `${window.innerHeight - tooltipPos.y + 8}px`,
+            left: `${tooltipPos.x}px`,
             transform: 'translateX(-50%)',
-            zIndex: 9999,
+            zIndex: 99999,
             width: 260,
             pointerEvents: 'none',
           }}
           className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-2xl leading-relaxed whitespace-pre-wrap"
         >
-          <p className="font-semibold text-blue-300 mb-1">{data.label}</p>
           <p>{data.description}</p>
           {/* 吹き出しの三角 */}
           <div
@@ -63,7 +72,8 @@ function PaperNode({ data }: PaperNodeProps) {
               borderTop: '6px solid #111827',
             }}
           />
-        </div>
+        </div>,
+        document.body
       )}
 
       <div className="text-xs font-semibold text-gray-800 leading-tight line-clamp-2">{data.label}</div>
