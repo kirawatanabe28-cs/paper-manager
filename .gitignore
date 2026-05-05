@@ -14,6 +14,9 @@ frontend/dist/
 # Docker の永続データ（論文PDF・DB）
 data/
 
+# Claude Code
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
