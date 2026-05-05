@@ -1,5 +1,6 @@
 This software uses GROBID (https://github.com/grobidOrg/grobid),
-which is licensed under the Apache 2.0 License.
+Copyright 2008-2023 GROBID's contributors
+Licensed under the Apache License, Version 2.0.
 http://www.apache.org/licenses/LICENSE-2.0
 
 Docker Image: grobid/grobid:0.9.0-crf
